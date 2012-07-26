@@ -1,0 +1,46 @@
+
+apply from: 'gradle/extras.gradle'
+apply plugin: 'java'
+
+repositories {
+    flatDir {
+        dirs file("${System.getenv('JAVA_HOME')}/lib")
+    }
+}
+
+dependencies {
+    compile files("${System.getenv('JAVA_HOME')}/lib/tools.jar")
+}
+
+jar {
+    version = ''
+    manifest {
+        attributes(
+            'Main-Class': 'jmx.Stethoscope'
+        )
+    }
+}
+
+task prepare(type: Copy, dependsOn: ['build']) {
+    into "build/$rootProject.name-$version"
+    from jar
+    from 'src/scripts'
+}
+
+task dist(type: Tar, dependsOn: ['prepare']) {
+    description 'Create the distribution'
+    
+    compression = org.gradle.api.tasks.bundling.Compression.GZIP
+    destinationDir file('build/distributions')
+    inputs.files files("build/$rootProject.name-$version")
+    outputs.dir destinationDir
+    baseName = rootProject.name
+    version = rootProject.version
+    extension = 'tar.gz'
+    from 'build'
+    include "$rootProject.name-$version/**"
+    
+    doLast {
+        project.ant.chmod(file: "build/$rootProject.name-$version/scope", perm: 'ugo+x')
+    }
+}
