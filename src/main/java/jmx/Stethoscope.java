@@ -104,7 +104,7 @@ public class Stethoscope {
             }
             else if (args.length >= 2 && "--threads".equalsIgnoreCase(args[1])) {
                 long delay = 1000;
-                int count = 1;
+                int count = Integer.MAX_VALUE;
                 if (args.length >= 3) {
                     delay = Long.parseLong(args[2]);
                 }
@@ -328,9 +328,7 @@ public class Stethoscope {
                         data.put("x" + e + "QS", connection.getAttribute(name, "queueSize"));
                         e++;
                     }
-
                 }
-                
 
                 StringBuilder header = new StringBuilder();
                 StringBuilder row = new StringBuilder();
