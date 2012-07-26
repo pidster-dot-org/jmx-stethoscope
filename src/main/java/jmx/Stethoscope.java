@@ -1,3 +1,21 @@
+/*
+ *  Copyright 2012 The original authors
+ *  
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package jmx;
 
 import java.io.Console;
@@ -8,6 +26,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
@@ -34,7 +53,20 @@ import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import com.sun.tools.attach.VirtualMachineDescriptor;
 
+/**
+ * @author <a href="http://github.com/pidster">pidster</a>
+ *
+ */
 public class Stethoscope {
+
+    private static final class MapKeyEntrySetComparator implements
+            Comparator<Entry<String, Object>> {
+        @Override
+        public int compare(Entry<String, Object> o1,
+                Entry<String, Object> o2) {
+            return o1.getKey().compareTo(o2.getKey());
+        }
+    }
 
     private static final class MBeanAttributeInfoComparator implements
             Comparator<MBeanAttributeInfo> {
@@ -70,8 +102,16 @@ public class Stethoscope {
             else if (args.length == 2 && "--console".equalsIgnoreCase(args[1])) {
                 console(args[0]);
             }
-            else if (args.length == 2 && "--threads".equalsIgnoreCase(args[1])) {
-                threads(args[0]);
+            else if (args.length >= 2 && "--threads".equalsIgnoreCase(args[1])) {
+                long delay = 1000;
+                int count = 1;
+                if (args.length >= 3) {
+                    delay = Long.parseLong(args[2]);
+                }
+                if (args.length >= 4) {
+                    count = Integer.parseInt(args[3]);
+                }
+                threads(args[0], delay, count);
             }
             else if (args.length >= 2 && "--get".equalsIgnoreCase(args[1])) {
                 String[] dest = new String[args.length - 2];
@@ -237,7 +277,7 @@ public class Stethoscope {
         }
     }
     
-    public static void threads(String id) {
+    public static void threads(String id, long delay, int count) {
         try {
             connect(id);
             MBeanServerConnection connection = connector.getMBeanServerConnection();
@@ -245,8 +285,76 @@ public class Stethoscope {
             ObjectName threading = new ObjectName(ManagementFactory.THREAD_MXBEAN_NAME);
             ThreadMXBean threadMXBean = JMX.newMXBeanProxy(connection, threading, ThreadMXBean.class);
 
-            // TODO something clever with threads
+            boolean first = true;
             
+            for (int i=0; i<count; i++) {
+
+                Map<String, Object> data = new HashMap<String, Object>();
+                
+                data.put("DTC", threadMXBean.getDaemonThreadCount());
+                data.put("PTC", threadMXBean.getPeakThreadCount());
+                data.put("TC", threadMXBean.getThreadCount());
+                data.put("STC", threadMXBean.getTotalStartedThreadCount());
+
+                long[] findDeadlockedThreads = threadMXBean.findDeadlockedThreads();
+                int deadlockedThreadCount = (findDeadlockedThreads != null) ? findDeadlockedThreads.length : 0;
+                data.put("DLC", deadlockedThreadCount);
+                
+                long[] findMonitorDeadlockedThreads = threadMXBean.findMonitorDeadlockedThreads();
+                int monitorDeadlockedThreads = (findMonitorDeadlockedThreads != null) ? findMonitorDeadlockedThreads.length : 0;
+                data.put("MDLC", monitorDeadlockedThreads);
+                
+
+                ObjectName query = new ObjectName("*:type=Executor,name=*");
+                Set<ObjectName> names = connection.queryNames(query, null);
+                
+                if (names.size() >= 0) {
+                    TreeSet<ObjectName> sorted = new TreeSet<ObjectName>(new Comparator<ObjectName>() {
+                        @Override
+                        public int compare(ObjectName one, ObjectName two) {
+                            String a = String.format("%s:%s", one.getDomain(), one.getKeyPropertyListString());
+                            String b = String.format("%s:%s", two.getDomain(), two.getKeyPropertyListString());
+                            return a.compareTo(b);
+                        }});
+
+                    sorted.addAll(names);
+                    
+                    int e = 0;
+                    for (ObjectName name : sorted) {
+                        data.put("x" + e + "AC", connection.getAttribute(name, "activeCount"));
+                        data.put("x" + e + "CPS", connection.getAttribute(name, "corePoolSize"));
+                        data.put("x" + e + "LPS", connection.getAttribute(name, "largestPoolSize"));
+                        data.put("x" + e + "PS", connection.getAttribute(name, "poolSize"));
+                        data.put("x" + e + "QS", connection.getAttribute(name, "queueSize"));
+                        e++;
+                    }
+
+                }
+                
+
+                StringBuilder header = new StringBuilder();
+                StringBuilder row = new StringBuilder();
+                Set<Entry<String, Object>> entrySet = new TreeSet<Entry<String, Object>>(new MapKeyEntrySetComparator());
+                entrySet.addAll(data.entrySet());
+                
+                
+                for (Entry<String, Object> e : entrySet) {
+                    header.append(String.format(" %-8s", e.getKey()));
+                    row.append(String.format(" %-8s", e.getValue()));
+                }
+                
+                // row.append("%n");
+                
+                if (first) {
+                    System.out.printf("Displaying thread info for PID: %s %n", id);
+                    System.out.println(header.toString());
+                }
+                System.out.println(row.toString());
+                                
+                Thread.sleep(delay);
+                first = false;                
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
