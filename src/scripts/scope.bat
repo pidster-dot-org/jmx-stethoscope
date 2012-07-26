@@ -69,10 +69,10 @@ set CMD_LINE_ARGS=%$
 :execute
 @rem Setup the command line
 
-set CLASSPATH=%JAVA_HOME%\lib\tools.jar
+set CLASSPATH=%JAVA_HOME%\lib\tools.jar;%APP_HOME%\jmx-stethoscope.jar
 
 @rem Execute vertx
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% -classpath "%CLASSPATH%" -jar %APP_HOME%\jmx-stethoscope.jar %CMD_LINE_ARGS%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% -classpath "%CLASSPATH%" jmx.Stethoscope %CMD_LINE_ARGS%
 
 :end
 @rem End local scope for the variables with windows NT shell

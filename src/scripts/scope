@@ -23,4 +23,4 @@ cd "`dirname \"$PRG\"`/"
 APP_HOME="`pwd -P`"
 cd "$SAVED"
 
-$JAVA_HOME/bin/java -cp $JAVA_HOME/lib/tools.jar -jar $APP_HOME/jmx-stethoscope.jar $@
+$JAVA_HOME/bin/java -cp $JAVA_HOME/lib/tools.jar:$APP_HOME/jmx-stethoscope.jar jmx.Stethoscope $@
