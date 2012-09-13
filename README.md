@@ -1,7 +1,9 @@
-# ProjectName
+# JMX Stethoscope
 
-A project summary goes here
+This is a simple tool for inspecting a running JVM process.
+It uses the Java Attach API to connect to the process and then provides data from some of the key JMX MBeans.
 
-## A_set_of_build_instructions
+## Download
 
-Put your build instructions here.
+You can download a package, from here: (jmx-stethoscope-0.1.tar.gz)[https://github.com/pidster/jmx-stethoscope/downloads] — A initial release of jmx-stethoscope-0.1.tar.gz
+

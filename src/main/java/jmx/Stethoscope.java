@@ -26,7 +26,6 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
@@ -348,9 +347,9 @@ public class Stethoscope {
                     System.out.println(header.toString());
                 }
                 System.out.println(row.toString());
-                                
+
                 Thread.sleep(delay);
-                first = false;                
+                first = false;
             }
 
         } catch (Exception e) {
