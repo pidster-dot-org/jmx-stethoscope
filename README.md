@@ -5,5 +5,5 @@ It uses the Java Attach API to connect to the process and then provides data fro
 
 ## Download
 
-You can download a package, from here: (jmx-stethoscope-0.1.tar.gz)[https://github.com/pidster/jmx-stethoscope/downloads] — A initial release of jmx-stethoscope-0.1.tar.gz
+You can download a package, from here: [jmx-stethoscope-0.1.tar.gz](https://github.com/pidster/jmx-stethoscope/downloads) — A initial release of jmx-stethoscope-0.1.tar.gz
 
