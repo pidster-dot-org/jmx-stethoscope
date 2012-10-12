@@ -82,12 +82,12 @@ public class Stethoscope {
     private static JMXConnector connector = null;
 
     public static void main(String[] args) {
-        
+
         try {
             if (args == null || args.length == 0) {
                 usage();
             }
-            
+
             else if (args.length == 1 && "--list".equalsIgnoreCase(args[0])) {
                 list();
             }
@@ -97,7 +97,7 @@ public class Stethoscope {
             else if (args.length == 1 && "--usage".equalsIgnoreCase(args[0])) {
                 usage();
             }
-            
+
             else if (args.length == 2 && "--console".equalsIgnoreCase(args[1])) {
                 console(args[0]);
             }
@@ -123,7 +123,7 @@ public class Stethoscope {
             else if (args.length == 2 && "--system".equalsIgnoreCase(args[1])) {
                 system(args[0]);
             }
-            
+
             else if (args.length == 3 && "--mbeans".equalsIgnoreCase(args[1])) {
                 mbeans(args[0], args[2]);
             }
@@ -136,7 +136,7 @@ public class Stethoscope {
             disconnect();
         }
     }
-    
+
     public static void console(String id) {
         try {
             connect(id);
@@ -146,10 +146,10 @@ public class Stethoscope {
                 if ("exit".equalsIgnoreCase(input) || "quit".equalsIgnoreCase(input)) {
                     break LOOP;
                 }
-                
+
                 if (input == null || "".equals(input))
                     continue;
-                
+
                 if (input.startsWith("get")) {
                     String line = input.replaceFirst("get", "").trim();
                     get(line.split("[ \\s\\t]+"));
@@ -164,7 +164,7 @@ public class Stethoscope {
     public static void mbeans(String id, String query) {
         try {
             connect(id);
-            
+
             if (query == null || "".equals(query)) {
                 System.out.println("Which mbeans? Try using a wildcard, e.g. *:type=*, or *:type=*,*");
                 return;
@@ -174,12 +174,12 @@ public class Stethoscope {
                     .getMBeanServerConnection();
             ObjectName queryName = new ObjectName(query);
             Set<ObjectName> names = connection.queryNames(queryName, null);
-            
+
             if (names.size() == 0) {
                 System.out.printf("Found 0 results %n");
                 return;
             }
-            
+
             TreeSet<ObjectName> sorted = new TreeSet<ObjectName>(new Comparator<ObjectName>() {
                 @Override
                 public int compare(ObjectName one, ObjectName two) {
@@ -187,9 +187,9 @@ public class Stethoscope {
                     String b = String.format("%s:%s", two.getDomain(), two.getKeyPropertyListString());
                     return a.compareTo(b);
                 }});
-            
+
             sorted.addAll(names);
-            
+
             for (ObjectName name : sorted) {
                 System.out.printf(" %s:%s %n", name.getDomain(), name.getKeyPropertyListString());
             }
@@ -199,7 +199,6 @@ public class Stethoscope {
         }
     }
 
-    
     public static void get(String id, String[] args) {
         try {
             connect(id);
@@ -212,23 +211,23 @@ public class Stethoscope {
 
     private static void get(String[] args) {
         try {
-            
+
             if (args == null || args.length == 0 || (args.length == 1 && "".equals(args[0]))) {
                 System.out.println("'get' what? Try using a wildcard, e.g. *:type=*");
                 return;
             }
-            
+
             String beanName = args[0];
 
             MBeanServerConnection connection = connector.getMBeanServerConnection();
             ObjectName query = new ObjectName(beanName);
             Set<ObjectName> names = connection.queryNames(query, null);
-            
+
             if (names.size() == 0) {
                 System.out.printf("Found 0 results %n");
                 return;
             }
-            
+
             TreeSet<ObjectName> sorted = new TreeSet<ObjectName>(new Comparator<ObjectName>() {
                 @Override
                 public int compare(ObjectName one, ObjectName two) {
@@ -241,7 +240,7 @@ public class Stethoscope {
 
             for (ObjectName name : sorted) {
                 MBeanInfo info = connection.getMBeanInfo(name);
-                
+
                 if (args.length == 2) {
                     String attrName = args[1];
                     Object o = connection.getAttribute(name, attrName);
@@ -265,8 +264,8 @@ public class Stethoscope {
                             }
                             o = t.getMessage();
                         }
-                        
-                        System.out.printf("  %s=%s%n", attr.getName(), o);                        
+
+                        System.out.printf("  %s=%s%n", attr.getName(), o);
                     }
                 }
             }
@@ -275,21 +274,21 @@ public class Stethoscope {
             e.printStackTrace();
         }
     }
-    
+
     public static void threads(String id, long delay, int count) {
         try {
             connect(id);
             MBeanServerConnection connection = connector.getMBeanServerConnection();
-            
+
             ObjectName threading = new ObjectName(ManagementFactory.THREAD_MXBEAN_NAME);
             ThreadMXBean threadMXBean = JMX.newMXBeanProxy(connection, threading, ThreadMXBean.class);
 
             boolean first = true;
-            
+
             for (int i=0; i<count; i++) {
 
                 Map<String, Object> data = new HashMap<String, Object>();
-                
+
                 data.put("DTC", threadMXBean.getDaemonThreadCount());
                 data.put("PTC", threadMXBean.getPeakThreadCount());
                 data.put("TC", threadMXBean.getThreadCount());
@@ -298,15 +297,14 @@ public class Stethoscope {
                 long[] findDeadlockedThreads = threadMXBean.findDeadlockedThreads();
                 int deadlockedThreadCount = (findDeadlockedThreads != null) ? findDeadlockedThreads.length : 0;
                 data.put("DLC", deadlockedThreadCount);
-                
+
                 long[] findMonitorDeadlockedThreads = threadMXBean.findMonitorDeadlockedThreads();
                 int monitorDeadlockedThreads = (findMonitorDeadlockedThreads != null) ? findMonitorDeadlockedThreads.length : 0;
                 data.put("MDLC", monitorDeadlockedThreads);
-                
 
                 ObjectName query = new ObjectName("*:type=Executor,name=*");
                 Set<ObjectName> names = connection.queryNames(query, null);
-                
+
                 if (names.size() >= 0) {
                     TreeSet<ObjectName> sorted = new TreeSet<ObjectName>(new Comparator<ObjectName>() {
                         @Override
@@ -317,7 +315,7 @@ public class Stethoscope {
                         }});
 
                     sorted.addAll(names);
-                    
+
                     int e = 0;
                     for (ObjectName name : sorted) {
                         data.put("x" + e + "AC", connection.getAttribute(name, "activeCount"));
@@ -333,15 +331,14 @@ public class Stethoscope {
                 StringBuilder row = new StringBuilder();
                 Set<Entry<String, Object>> entrySet = new TreeSet<Entry<String, Object>>(new MapKeyEntrySetComparator());
                 entrySet.addAll(data.entrySet());
-                
-                
+
                 for (Entry<String, Object> e : entrySet) {
                     header.append(String.format(" %-8s", e.getKey()));
                     row.append(String.format(" %-8s", e.getValue()));
                 }
-                
+
                 // row.append("%n");
-                
+
                 if (first) {
                     System.out.printf("Displaying thread info for PID: %s %n", id);
                     System.out.println(header.toString());
@@ -360,20 +357,20 @@ public class Stethoscope {
     public static void info(String id) {
         try {
             connect(id);
-            
+
             MBeanServerConnection connection = connector.getMBeanServerConnection();
 
             ObjectName operatingSystem = new ObjectName(ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME);
             OperatingSystemMXBean osMXBean = JMX.newMXBeanProxy(connection, operatingSystem, OperatingSystemMXBean.class);
-            
+
             ObjectName runtime = new ObjectName(ManagementFactory.RUNTIME_MXBEAN_NAME);
             RuntimeMXBean runtimeMXBean = JMX.newMXBeanProxy(connection, runtime, RuntimeMXBean.class);
-            
+
             long startTime = runtimeMXBean.getStartTime();
             long uptime = System.currentTimeMillis() - startTime;
-            
+
             Date started = new Date(startTime);
-            
+
             System.out.printf("Connected to PID:%s uid:%s %n", id, runtimeMXBean.getName());
             System.out.printf("%s (v%s) [%s - %s procs] %n", osMXBean.getName(), osMXBean.getVersion(), osMXBean.getArch(), osMXBean.getAvailableProcessors());
             System.out.printf("load av:%s uptime:%sms started:%s %n", osMXBean.getSystemLoadAverage(), uptime, started);
@@ -386,22 +383,21 @@ public class Stethoscope {
     public static void system(String id) {
         try {
             connect(id);
-            
+
             MBeanServerConnection connection = connector.getMBeanServerConnection();
-            
+
             ObjectName runtime = new ObjectName(ManagementFactory.RUNTIME_MXBEAN_NAME);
             RuntimeMXBean runtimeMXBean = JMX.newMXBeanProxy(connection, runtime, RuntimeMXBean.class);
-            
+
             System.out.printf("Connected to PID: %s %n", id);
 
             Map<String, String> systemProperties = runtimeMXBean.getSystemProperties();
             Set<Entry<String, String>> entrySet = systemProperties.entrySet();
-            
+
             for (Entry<String, String> entry : entrySet) {
                 System.out.printf("%s=%s %n", entry.getKey(), entry.getValue());
             }
-            
-            
+
         } catch (AttachNotSupportedException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -412,8 +408,7 @@ public class Stethoscope {
             e.printStackTrace();
         }
     }
-    
-    
+
     public static void list() {
         System.out.println("Listing Java processes visible to this user: ");
         List<VirtualMachineDescriptor> descriptors = VirtualMachine.list();
@@ -421,7 +416,7 @@ public class Stethoscope {
             System.out.printf("%6s %s %n", vmd.id(), vmd.displayName());
         }
     }
-    
+
     public static void help() {
         System.out.println("There's no help (or hope), see --usage");
     }
@@ -457,7 +452,7 @@ public class Stethoscope {
 
         connector.connect();
     }
-    
+
     private static void disconnect() {
         if (machine != null)
             try {
